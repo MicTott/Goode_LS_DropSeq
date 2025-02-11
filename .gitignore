@@ -1,0 +1,64 @@
+# General macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# macOS Trash folder which might appear
+.Trashes
+
+# General backup files
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# RStudio file
+.Rhistory
+.Rproj.user/
+Goode_data.Rproj
+
+# Ignore R workspace files and large objects
+*.RData
+*.rds
+*.Rdata
+*.rda
+*.Robj
+
+# Compiled source files
+*.o
+*.so
+*.dll
+
+# R package build artifacts
+*.tar.gz
+
+# Logs and reports
+*.out
+*.log
+*.aux
+*.tex
+
+# Knitr cache and output
+*_cache/
+*_files/
+*.Rmd~
+
+# Temporary files created during data processing
+*.csv~
+*.tsv~
+*.xls~
+*.xlsx~
+*.sav~
+*.dat~
+*.RData~
+*.rds~
+
+# Python virtual environments (if applicable)
+__pycache__/
+*.pyc
+
+# MacOS Finder attributes
+._*
+
+# Thumbs.db (Windows file system if shared on Mac)
+Thumbs.db
