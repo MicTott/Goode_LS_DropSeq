@@ -5,6 +5,8 @@ library(harmony)
 library(dplyr)
 library(patchwork)
 library(scCustomize)
+library(circlize)
+library(ComplexHeatmap)
 
 plot_dir <- here("plots", "04_marker_genes")
 processed_dir <- here("processed-data", "04_marker_genes")
@@ -35,6 +37,75 @@ top50_markers <- ls.gaba.markers %>%
 
 # export to csv
 write.csv(top50_markers, here(processed_dir, "top50_markers_per_GABAclass.csv"))
+
+
+
+selected_genes <- c()  # Track genes that have been assigned
+
+top1_markers <- ls.gaba.markers %>%
+  group_by(cluster) %>%
+  dplyr::filter(avg_log2FC > 1) %>%
+  arrange(cluster) %>%  # Ensure original order
+  group_split() %>%  # Process each cluster separately
+  purrr::map_df(~ {
+    df <- .x %>% dplyr::filter(!gene %in% selected_genes)  # Remove previously assigned genes
+    if (nrow(df) > 0) {
+      selected_genes <<- c(selected_genes, df$gene[1])  # Store chosen gene
+      return(df[1, ])  # Keep only the first available gene per cluster
+    } else {
+      return(NULL)  # If no unique gene remains for this cluster, it is skipped
+    }
+  })
+
+markers <- top1_markers$gene
+
+
+pdf(here(plot_dir, "Violins_TopMarker.pdf"), width=5, height=8)
+VlnPlot_scCustom(seurat, features = markers, pt.size = 0.1,  stack=TRUE, flip = TRUE) + NoLegend() 
+dev.off()
+
+
+
+
+# ======= Heatmap of top 5 marker genes per cell type =======
+
+top5_markers <- ls.gaba.markers %>%
+  group_by(cluster) %>%
+  dplyr::filter(avg_log2FC > 1) %>%
+  slice_head(n = 3) %>%
+  ungroup()
+
+markers <- top5_markers$gene
+
+# Step 2: Aggregate expression per cluster
+# Calculate average expression per cluster for the marker genes
+avg_expr <- AverageExpression(seurat, features = markers, return.seurat = FALSE)
+expr_matrix <- avg_expr$RNA  # Extract matrix from list
+
+# Step 3: Scale the data for visualization
+scaled_expr <- t(scale(t(expr_matrix)))  # Row-wise scaling
+
+# Step 4: Define cluster annotation
+cluster_labels <- factor(colnames(scaled_expr))  # Cluster names
+cluster_colors <- rainbow(length(unique(cluster_labels)))  # Assign colors
+names(cluster_colors) <- unique(cluster_labels)
+
+# Step 5: Generate the heatmap
+pdf(here(plot_dir, "Heatmap_top5_marker_genes.pdf"), width=6, height=9)
+Heatmap(scaled_expr,
+        name = "Expression",
+        cluster_rows = FALSE,  # Cluster genes
+        cluster_columns = FALSE,  # Don't cluster cell type clusters
+        show_column_names = TRUE,
+        column_title = "Cell Type Clusters",
+        row_title = "Top 5 Marker Genes",
+        #col = colorRamp2::colorRamp2(c(-2, 0, 2), c("blue", "white", "red")),  # Color scale
+        top_annotation = HeatmapAnnotation(Cluster = cluster_labels, 
+                                           col = list(Cluster = cluster_colors))
+)
+dev.off()
+
+
 
 # ======= Cell type proportions ========
 
@@ -155,3 +226,54 @@ ggplot(coexpression_data, aes(x = Gene1, y = Gene2, fill = Coexpression)) +
         axis.title = element_blank(),
         strip.text = element_text(size = 12, face = "bold"))
 dev.off()
+
+
+
+
+# ========= Dot plots of marker genes from LS paper ==========
+# https://www.biorxiv.org/content/10.1101/2024.02.15.580381v1.full.pdf
+
+genes <- c("Foxp2", "Gucy1a1", "Drd3", "Rorb", "Tshz2", "Chst8", "Pth2r", "Zeb2", 
+           "Lamp5", "Glp1r", "Ndnf", "Esr1", "Cux2", "Tacr3", "Calcr", "Met", 
+           "Emilin2", "Pcsk6", "Igf2bp2", "Pax6", "Tmem132c", "Dach2", "Lhx2", 
+           "Crhr2", "Hunk", "Nts", "Sst", "Cartpt", "Hopx", "Etv1", "Chat", 
+           "Moxd1", "Slc5a7", "L3mbtl4", "Meis2", "Sfta3-ps")
+
+pdf(here(plot_dir, "DotPlot_marker_genes_Reid_et_al.pdf"), width=6, height=8)
+DotPlot_scCustom(seurat, features = genes,  flip_axes=TRUE, colors_use = c("blue", "white", "red")) + NoLegend()
+dev.off()
+
+
+
+# Step 2: Aggregate expression per cluster
+# Calculate average expression per cluster for the marker genes
+avg_expr <- AverageExpression(seurat, features = genes, return.seurat = FALSE)
+expr_matrix <- avg_expr$RNA  # Extract matrix from list
+
+# Step 3: Scale the data for visualization
+scaled_expr <- t(scale(t(expr_matrix)))  # Row-wise scaling
+
+# Step 4: Define cluster annotation
+cluster_labels <- factor(colnames(scaled_expr))  # Cluster names
+cluster_colors <- rainbow(length(unique(cluster_labels)))  # Assign colors
+names(cluster_colors) <- unique(cluster_labels)
+
+# Step 5: Generate the heatmap
+
+Heatmap(scaled_expr,
+        name = "Expression",
+        cluster_rows = FALSE,  # Cluster genes
+        cluster_columns = FALSE,  # Don't cluster cell type clusters
+        show_column_names = TRUE,
+        column_title = "Cell Type Clusters",
+        row_title = "Top 5 Marker Genes",
+        #col = colorRamp2::colorRamp2(c(-2, 0, 2), c("blue", "white", "red")),  # Color scale
+        top_annotation = HeatmapAnnotation(Cluster = cluster_labels, 
+                                           col = list(Cluster = cluster_colors))
+)
+
+
+# new column order: 15,16, 
+
+
+
