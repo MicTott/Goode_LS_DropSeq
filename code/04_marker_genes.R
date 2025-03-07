@@ -245,6 +245,38 @@ dev.off()
 
 
 
+genes <- c("Meis2","Foxp2", "Zeb2", 
+           "Nts", "Sst","Nos1", "Pdyn", "Penk","Npy",
+           "Esr1",  
+            "Pax6", "Tmem132c", "Dach2", "Lhx2", 
+            "Hunk", "Etv1"
+            )
+
+pdf(here(plot_dir, "New_DotPlot_marker_genes_Reid_et_al.pdf"), width=6, height=6)
+DotPlot_scCustom(seurat, features = genes,  flip_axes=TRUE, colors_use = c("blue", "white", "red")) + NoLegend()
+dev.off()
+
+# average expression per cluster
+avg <- AverageExpression(seurat, features = genes, return.seurat = FALSE)
+avg
+
+min_max_scale <- function(x) (x - min(x)) / (max(x) - min(x))
+scaled_mat <- t(apply(avg$SCT, 1, min_max_scale))  # Scale each row
+
+png(here(plot_dir, "Average_expression_per_cluster.png"), width=5, height=4.5, units = "in", res = 300)
+ComplexHeatmap::Heatmap(scaled_mat, name = "Expression", 
+                        cluster_rows = FALSE, 
+                        cluster_columns = FALSE, 
+                        show_column_names = TRUE, 
+                        column_title = "Marker gene expression",
+                        #row_title = "Top 5 Marker Genes",
+                        # color white to red using colorbewer
+                        col = colorRamp2::colorRamp2(c(0, 1), c("white", "red"))
+)
+dev.off()
+
+
+
 # Step 2: Aggregate expression per cluster
 # Calculate average expression per cluster for the marker genes
 avg_expr <- AverageExpression(seurat, features = genes, return.seurat = FALSE)
