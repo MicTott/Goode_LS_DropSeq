@@ -106,5 +106,3 @@ dev.off()
 
 # save
 saveRDS(seurat, here(processed_dir, "DLS_new_clusters.Robj"))
-
-
