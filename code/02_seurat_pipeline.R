@@ -105,4 +105,9 @@ FeaturePlot(seurat, reduction="umap", features=c("nCount_RNA", "nFeature_RNA", "
 dev.off()
 
 # save
-saveRDS(seurat, here(processed_dir, "DLS_new_clusters.Robj"))
+saveRDS(seurat, here(processed_dir, "DLS_new_clusters.rds"))
+
+
+# load
+seurat <- readRDS(here(processed_dir, "DLS_new_clusters.rds"))
+

@@ -40,51 +40,41 @@ markers <- c("Snap25", "Syt1",
 colors_use <- c("blue", "white", "red")
 
 
-pdf(here(plot_dir, "broad_cell_type_markers.pdf"), width=8, height=8)
+pdf(here(plot_dir, "dotplot_broad_markers.pdf"), width=8, height=8)
 Clustered_DotPlot(seurat, features = markers, colors_use_exp = colors_use, cluster_feature=FALSE)
 dev.off()
 
-# new broad annotations
 
-broad_annotations <- list(
-  "GABA" = c(16,8,14,24,11,4,12,3,5,0,2,1,6,19,10,22),
-  "vGlut1" = c(7,15,17,13,23),
-  "vGlut2" = c(18,21),
-  "Glia" = c(9,20)
-)
+# $broad_labels with just those 4 broad annotations to the seurat object
+seurat$broad_celltype <- NA
+seurat$broad_celltype[seurat$seurat_clusters %in% c(16,8,14,24,11,4,12,3,5,0,2,1,6,19,10,22)] <- "GABA"
+seurat$broad_celltype[seurat$seurat_clusters %in% c(7,15,17,13,23)] <- "vGlut1"
+seurat$broad_celltype[seurat$seurat_clusters %in% c(18, 21)] <- "vGlut2"
+seurat$broad_celltype[seurat$seurat_clusters %in% c(9,20)] <- "Glia"
 
-# Create a vector for broad cell types
-seurat$broad_cell_type <- NA  # Initialize with NA
+# Check the broad cell type amounts
+table(seurat$broad_celltype)
+# GABA   Glia vGlut1 vGlut2 
+# 22879   1566   3432    924 
 
-# Assign new labels with sequential numbering for each category
-for (cell_type in names(broad_annotations)) {
-  clusters <- broad_annotations[[cell_type]]
-  counter <- 1  # Initialize counter for numbering
-  
-  for (cluster in clusters) {
-    seurat$broad_cell_type[seurat$seurat_clusters == cluster] <- paste0(cell_type, ".", counter)
-    counter <- counter + 1  # Increment counter for the next cluster
-  }
-}
-
-# Check the distribution
-table(seurat$broad_cell_type)
-Idents(seurat) <- "broad_cell_type"
+Idents(seurat) <- "broad_celltype"
 
 
-# plot with new labels
-pdf(here(plot_dir, "broad_cell_type_markers_new_annotations.pdf"), width=8, height=8)
-Clustered_DotPlot(seurat, features = markers, colors_use_exp = colors_use, cluster_feature=FALSE)
+# umap with broad cell type labels
+pdf(here(plot_dir, "umap_broad_celltypes.pdf"), width=5, height=5)
+DimPlot(seurat, reduction="umap", group.by="broad_celltype")
 dev.off()
+
 
 
 #  ==== bar plot of broad cell type percentages  ====
-broad_cell_type_percentages <- table(seurat$broad_cell_type) / ncol(seurat) * 100
-broad_sums <- data.frame(CellType = rownames(broad_sums), Percentage = broad_sums$broad_sums, row.names = NULL)
+broad_sums <- table(seurat$broad_celltype)
+broad_celltype_percentages <- table(seurat$broad_celltype) / ncol(seurat) * 100
+broad_sums <- data.frame(CellType = rownames(broad_sums), Percentage = broad_sums, row.names = NULL)
 
 # Save plot to PDF
-pdf(here(plot_dir, "broad_cell_type_percentages.pdf"), width=2.5, height=3.5)
-ggplot(broad_sums, aes(x = CellType, y = Percentage, fill=CellType)) +
+pdf(here(plot_dir, "broad_celltype_percentages.pdf"), width=2.5, height=3.5)
+ggplot(broad_sums, aes(x = CellType, y = Percentage.Freq, fill=CellType)) +
   geom_bar(stat = "identity") +
   labs(title = "Broad Cell Type Percentages",
        x = "Broad Cell Type",
@@ -97,7 +87,7 @@ dev.off()
 
 
 # ==== stacked bars of percent samples that make up each broad cell type ====
-sample_percents <- table(seurat$broad_cell_type, seurat$Sample_ID)
+sample_percents <- table(seurat$broad_celltype, seurat$Sample_ID)
 #          DLS1 DLS2 DLS3
 # GABA.1    198  182  188
 # GABA.10  1446 1421 1427
@@ -106,7 +96,7 @@ sample_percents <- table(seurat$broad_cell_type, seurat$Sample_ID)
 # GABA.13   535  502  480
 
 # Convert counts to row-wise percentages
-sample_percents <- table(seurat$broad_cell_type, seurat$Sample_ID)
+sample_percents <- table(seurat$broad_celltype, seurat$Sample_ID)
 sample_percents_norm <- prop.table(sample_percents, margin = 1) * 100  # Convert to percentage
 
 # Convert matrix to dataframe while keeping row and column names
@@ -124,8 +114,8 @@ df_long <- as.data.frame(sample_percents_norm) %>%
 colnames(df_long) <- c("", "Cell_Type", "Sample", "Percentage")
 
 # Create stacked bar plot
-pdf(here(plot_dir, "broad_cell_type_sample_percentages.pdf"), width=9, height=3)
-ggplot(df_long, aes(x = Cell_Type, y = Percentage, fill = Sample)) +
+pdf(here(plot_dir, "broad_celltype_sample_percentages.pdf"), width=9, height=3)
+ggplot(df_long, aes(x = Cell_Type, y = Percentage, fill = Cell_Type)) +
   geom_bar(stat = "identity", position = "stack") +
   theme_minimal() +
   labs(title = "Percentage of Samples in Each Broad Cluster",
@@ -140,25 +130,27 @@ dev.off()
 saveRDS(seurat, here(processed_dir, "DLS_broad_celltypes.rds"))
 
 
-# ========= Drop vGlut1 neurons and re-clustering ======
 
-# Ensure broad_cell_type is a character vector
-seurat$broad_cell_type <- as.character(seurat$broad_cell_type)
+
+
+# ========= Drop vGlut1 neurons and re-clustering ======
+set.seed(1382)
+# Ensure broad_celltype is a character vector
+seurat$broad_celltype <- as.character(seurat$broad_celltype)
 
 # Identify cells that are NOT vGlut1
-cells_to_keep <- !grepl("^vGlut1", seurat$broad_cell_type)
+cells_to_keep <- !grepl("^vGlut1", seurat$broad_celltype)
 
 # Subset the Seurat object to keep only these cells
 seurat <- seurat[, cells_to_keep]
 
 # Verify that vGlut1 neurons are removed
-table(seurat$broad_cell_type)
-# GABA.1  GABA.10  GABA.11  GABA.12  GABA.13  GABA.14  GABA.15  GABA.16   GABA.2   GABA.3   GABA.4   GABA.5   GABA.6 
-# 568     4294     2349     3182     1517      485     1134      301     1202      592       67      929     1693 
-# GABA.7   GABA.8   GABA.9   Glia.1   Glia.2 vGlut2.1 vGlut2.2 
-# 891     2057     1618     1140      426      504      420 
+table(seurat$broad_celltype)
+# GABA   Glia vGlut2 
+# 22879   1566    924 
 
 # === Rerun seurat pipeline with SCTransform ===
+options(future.globals.maxSize = 1000 * 1024^2)
 seurat <- SCTransform(seurat, vars.to.regress = "percent.mito", verbose = FALSE)
 
 seurat <- RunPCA(seurat, verbose = FALSE) %>%
@@ -181,18 +173,23 @@ seurat <- RunUMAP(seurat, reduction="harmony", dims=1:20)
 seurat
 
 # plot umap
-pdf(here(plot_dir, "new_umap_clusters.pdf"), width=5, height=5)
+pdf(here(plot_dir, "umap_clusters_noGlut1.pdf"), width=5, height=5)
 DimPlot(seurat, reduction="umap", label=TRUE)
 dev.off()
 
 # umap with samples
-pdf(here(plot_dir, "new_umap_samples.pdf"), width=5, height=5)
+pdf(here(plot_dir, "umap_samples_noGlut1.pdf"), width=5, height=5)
 DimPlot(seurat, reduction="umap", group.by="Sample_ID")
 dev.off()
 
+# umap with broad cell type
+pdf(here(plot_dir, "umap_broad_celltypes_noGlut1.pdf"), width=5, height=5)
+DimPlot(seurat, reduction="umap", group.by="broad_celltype")
+dev.off()
+
 # umap with markers
-pdf(here(plot_dir, "new_umap_markers.pdf"), width=8, height=8)
-FeaturePlot(seurat, reduction="umap", features=c("Snap25", "Mbp", "Slc17a7", 'Gad1'))
+pdf(here(plot_dir, "umap_markers_noGlut1.pdf"), width=8, height=8)
+FeaturePlot(seurat, reduction="umap", features=c("Snap25", "Mbp", "Slc17a6", 'Gad1'))
 dev.off()
 
 # umap with qc metrics
@@ -201,74 +198,18 @@ FeaturePlot(seurat, reduction="umap", features=c("nCount_RNA", "nFeature_RNA", "
 dev.off()
 
 
-
-# ========== Broad cell typing ============
-
-# dot plots of broad cell type markers
-markers <- c("Snap25", "Syt1",
-             "Slc17a7", "Slc17a6",
-             "Gad1", "Gad2", "Slc32a1",
-             "Sst", "Pvalb",
-             "Lamp5", "Vip",
-             "Pdyn", "Nts",
-             "Npy","Penk",
-             "Gfap", "Aqp4",
-             "Mbp", "Mobp",
-             "Cx3cr1", "P2ry12",
-             "Pdgfra","Cspg4",
-             "Foxj1","Tmem119")
-
-
-# make blue, white, red color palette
-colors_use <- c("blue", "white", "red")
-
-
-pdf(here(plot_dir, "new_broad_cell_type_markers.pdf"), width=8, height=8)
-Clustered_DotPlot(seurat, features = markers, colors_use_exp = colors_use, cluster_feature=FALSE)
-dev.off()
-
-
-# new broad annotations
-broad_annotations <- list(
-  "GABA" = c(16,14,22,23,1,0,20,12,5,2,7,10,9,13,3,6,4,19),
-  "vGlut2" = c(17,15),
-  "Glia" = c(11,8,21,18)
-)
-
-# Create a vector for broad cell types
-seurat$broad_cell_type <- NA  # Initialize with NA
-
-# Assign new labels with sequential numbering for each category
-for (cell_type in names(broad_annotations)) {
-  clusters <- broad_annotations[[cell_type]]
-  counter <- 1  # Initialize counter for numbering
-  
-  for (cluster in clusters) {
-    seurat$broad_cell_type[seurat$seurat_clusters == cluster] <- paste0(cell_type, ".", counter)
-    counter <- counter + 1  # Increment counter for the next cluster
-  }
-}
-
-# Check the distribution
-table(seurat$broad_cell_type)
-Idents(seurat) <- "broad_cell_type"
-
-
-# plot with new labels
-pdf(here(plot_dir, "new_broad_cell_type_markers_with_annotations.pdf"), width=8, height=8)
-Clustered_DotPlot(seurat, features = markers, colors_use_exp = colors_use, cluster_feature=FALSE)
-dev.off()
-
-table(seurat$broad_cell_type)
-
-
 # save
-saveRDS(seurat, here(processed_dir, "DLS_new_clusters_without_vGlut1.rds"))
+saveRDS(seurat, here(processed_dir, "DLS_broad_clusters_without_vGlut1.rds"))
+
+
+
+
+
 
 # ====== GABA annotations =======
 
 # subset to only GABA neurons
-seurat.gaba <- seurat[, grepl("^GABA", seurat$broad_cell_type)]
+seurat.gaba <- seurat[, grepl("^GABA", seurat$broad_celltype)]
 seurat.gaba
 # An object of class Seurat 
 # 43293 features across 21657 samples within 2 assays 
@@ -277,7 +218,6 @@ seurat.gaba
 # 1 other assay present: RNA
 # 3 dimensional reductions calculated: pca, harmony, umap
 
-
 # ====== subclustering GABA neurons ======
 set.seed(123)
 seurat.gaba <- SCTransform(seurat.gaba, vars.to.regress = "percent.mito", verbose = FALSE)
@@ -285,8 +225,8 @@ seurat.gaba <- SCTransform(seurat.gaba, vars.to.regress = "percent.mito", verbos
 seurat.gaba <- RunPCA(seurat.gaba, verbose = FALSE) %>%
   RunHarmony("Sample_ID", plot_convergence=TRUE)
 
-seurat.gaba <- FindNeighbors(seurat.gaba, reduction="harmony", dims=1:20)
-seurat.gaba <- FindClusters(seurat.gaba, resolution=0.5, algorithm=4)
+seurat.gaba <- FindNeighbors(seurat.gaba, reduction="harmony", dims=1:40)
+seurat.gaba <- FindClusters(seurat.gaba, resolution=0.5, dims = 1:40, k.param=30)
 seurat.gaba
 # An object of class Seurat 
 # 43293 features across 25369 samples within 2 assays 
@@ -298,7 +238,7 @@ seurat.gaba
 Idents(seurat.gaba) <- "seurat_clusters"
 
 #  ======== UMAP =========
-seurat.gaba <- RunUMAP(seurat.gaba, reduction="harmony", dims=1:20)
+seurat.gaba <- RunUMAP(seurat.gaba, reduction="harmony", dims=1:40)
 seurat.gaba
 
 # plot umap
@@ -308,7 +248,7 @@ dev.off()
 
 
 # === Ploting ===
-gaba_markers <- c("Sst", "Pvalb",  "Lamp5","Pdyn", "Nts","Penk", "Prkcd")
+gaba_markers <- c("Sst", "Pvalb",  "Lamp5","Pdyn", "Nts","Penk", "Prkcd", "Vip")
 
 # make blue, white, red color palette
 colors_use <- c("blue", "white", "red")
@@ -349,6 +289,44 @@ dev.off()
 pdf(here(plot_dir, "Gaba_subcluster_umap_Trpc4.pdf"), width=5, height=5)
 FeaturePlot(seurat.gaba, reduction="umap", features="Trpc4")
 dev.off()
+
+
+
+
+
+
+# ==== stacked bars of percent samples that make up each broad cell type ====
+sample_percents <- table(seurat.gaba$seurat_clusters, seurat.gaba$Sample_ID)
+
+
+# Convert counts to row-wise percentages
+sample_percents <- table(seurat.gaba$seurat_clusters, seurat.gaba$Sample_ID)
+sample_percents_norm <- prop.table(sample_percents, margin = 1) * 100  # Convert to percentage
+
+# Convert matrix to dataframe while keeping row and column names
+df_long <- as.data.frame(sample_percents_norm) %>%
+  tibble::rownames_to_column() 
+
+
+# rename Var1 to CellType and Var2 to Sample
+colnames(df_long) <- c("", "Cell_Type", "Sample", "Percentage")
+
+# Create stacked bar plot
+pdf(here(plot_dir, "broad_celltype_sample_percentages.pdf"), width=7, height=3)
+ggplot(df_long, aes(x = Cell_Type, y = Percentage, fill = Sample)) +
+  geom_bar(stat = "identity", position = "stack") +
+  theme_minimal() +
+  labs(title = "Percentage of Samples in Each Broad Cluster",
+       x = "Broad Cluster",
+       y = "Percentage",
+       fill = "Sample") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for readability
+dev.off()
+
+
+
+
+
 
 
 # save

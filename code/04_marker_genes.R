@@ -82,13 +82,18 @@ markers <- top5_markers$gene
 avg_expr <- AverageExpression(seurat, features = markers, return.seurat = FALSE)
 expr_matrix <- avg_expr$RNA  # Extract matrix from list
 
+# drop g from colnames
+colnames(expr_matrix) <- gsub("g", "", colnames(expr_matrix))
+
 # Step 3: Scale the data for visualization
 scaled_expr <- t(scale(t(expr_matrix)))  # Row-wise scaling
 
 # Step 4: Define cluster annotation
 cluster_labels <- factor(colnames(scaled_expr))  # Cluster names
-cluster_colors <- rainbow(length(unique(cluster_labels)))  # Assign colors
+cluster_colors <-  DiscretePalette_scCustomize(num_colors = 22, palette = "polychrome") # Assign colors
 names(cluster_colors) <- unique(cluster_labels)
+
+
 
 # Step 5: Generate the heatmap
 pdf(here(plot_dir, "Heatmap_top5_marker_genes.pdf"), width=6, height=9)
@@ -143,10 +148,50 @@ dev.off()
 
 
 # ======= Denrogram =======
-seurat <- BuildClusterTree(seurat)
+# change clusters names from"g1", "g2", ... to "1", "2", etc, ...
+seurat$seurat_clusters <- gsub("g", "", seurat$seurat_clusters)
+
+# Set the cleaned cluster labels as factor
+seurat$seurat_clusters <- factor(seurat$seurat_clusters, levels = sort(unique(seurat$seurat_clusters)))
+Idents(seurat) <- seurat$seurat_clusters
+seurat@tools$BuildClusterTree <- NULL
+
+# Rebuild the tree using cleaned identities
+seurat <- BuildClusterTree(seurat, dims = 1:20)  # adjust dims as needed
 PlotClusterTree(seurat)
 
 
+
+# === clustered dotplots of dev markers ===
+library(scCustomize)
+
+# Define genes of interest
+markers <- c("Trpc4", "Homer2", "Foxp2", "Meis2", "Zeb2")
+
+# make a white to red color scale
+my_colors <- colorRamp2(c(0, 1), c("white", "red"))
+
+# Create a custom dot plot
+pdf(here(plot_dir, "DotPlot_developmentMarkers.pdf"), width=9, height=4)
+Clustered_DotPlot(seurat, features = markers, colors_use_exp=viridis::rocket(n = 20, direction = -1))
+dev.off()
+
+
+# ======== UMAP with better colors ========
+
+pdf(here(plot_dir, "UMAP_with_scCustomize_colors.pdf"), width=5, height=5)
+DimPlot_scCustom(seurat) +
+  theme_void()
+dev.off()
+
+
+
+
+
+
+
+
+ # =========== Co expression stuff ===========
 # Visualize co-expression of two features simultaneously
 FeaturePlot(seurat, features = c("Sst", "Pdyn"), blend = TRUE)
 
