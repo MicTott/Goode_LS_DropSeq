@@ -308,12 +308,12 @@ avg
 min_max_scale <- function(x) (x - min(x)) / (max(x) - min(x))
 scaled_mat <- t(apply(avg$SCT, 1, min_max_scale))  # Scale each row
 
-png(here(plot_dir, "Average_expression_per_cluster.png"), width=5, height=4.5, units = "in", res = 300)
+pdf(here(plot_dir, "Average_expression_per_cluster.pdf"), width=5, height=4.5)
 ComplexHeatmap::Heatmap(scaled_mat, name = "Expression", 
                         cluster_rows = FALSE, 
                         cluster_columns = FALSE, 
                         show_column_names = TRUE, 
-                        column_title = "Marker gene expression",
+                        column_title = "Reid et al. marker genes",
                         #row_title = "Top 5 Marker Genes",
                         # color white to red using colorbewer
                         col = colorRamp2::colorRamp2(c(0, 1), c("white", "red"))

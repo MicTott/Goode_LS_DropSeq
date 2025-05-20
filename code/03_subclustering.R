@@ -130,13 +130,18 @@ dev.off()
 saveRDS(seurat, here(processed_dir, "DLS_broad_celltypes.rds"))
 
 
-
+#load
+#seurat <- readRDS(here(processed_dir, "DLS_broad_celltypes.rds"))
 
 
 # ========= Drop vGlut1 neurons and re-clustering ======
 set.seed(1382)
 # Ensure broad_celltype is a character vector
 seurat$broad_celltype <- as.character(seurat$broad_celltype)
+
+pdf(here(plot_dir, "umap_markers_wGlut1.pdf"), width=8, height=8)
+FeaturePlot(seurat, reduction="umap", features=c("Snap25", "Gad1", "Slc17a7", 'Slc17a6'))
+dev.off()
 
 # Identify cells that are NOT vGlut1
 cells_to_keep <- !grepl("^vGlut1", seurat$broad_celltype)
@@ -189,7 +194,7 @@ dev.off()
 
 # umap with markers
 pdf(here(plot_dir, "umap_markers_noGlut1.pdf"), width=8, height=8)
-FeaturePlot(seurat, reduction="umap", features=c("Snap25", "Mbp", "Slc17a6", 'Gad1'))
+FeaturePlot(seurat, reduction="umap", features=c("Snap25", "Gad1", "Slc17a7", 'Slc17a7'))
 dev.off()
 
 # umap with qc metrics

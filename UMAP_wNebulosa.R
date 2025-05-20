@@ -120,7 +120,7 @@ library(scuttle)  # For aggregateAcrossCells
 library(here)
 
 # Define marker genes
-genes <- c("Sst", "Nts", "Npy", "Penk", "Pdyn")
+genes <- c("Sst", "Nts", "Npy", "Penk", "Pdyn", "Glp1r", "Crhr2", "Pnoc", "Mchr1")
 
 # Aggregate expression per cluster using scuttle
 sce.agg <- aggregateAcrossCells(sce.subset, 
@@ -178,7 +178,7 @@ bar_anno <- HeatmapAnnotation(
 
 
 # Save heatmap as PNG
-pdf(here(plot_dir, "heatmap_marker_genes_subset.pdf"), width=5.5, height=3.5)
+pdf(here(plot_dir, "heatmap_marker_genes_subset_otherGenes.pdf"), width=5.5, height=3.5)
 
 Heatmap(t(expr_scaled),
         name = "Scaled Expression",
