@@ -45,6 +45,25 @@ Clustered_DotPlot(seurat, features = markers, colors_use_exp = colors_use, clust
 dev.off()
 
 
+# plot clusters
+pdf(here(plot_dir, "umap_broad_celltypes_clusters.pdf"), width=5, height=5)
+DimPlot(seurat, reduction="umap", label=TRUE)
+dev.off()
+
+
+# get and save marker genes
+markers <- FindAllMarkers(seurat, only.pos = TRUE)
+top50_markers <- markers %>%
+  group_by(cluster) %>%
+  dplyr::filter(avg_log2FC > 1) %>%
+  slice_head(n = 50) %>%
+  ungroup()
+
+# export top 50 markers per cell type
+write.csv(top50_markers, here(processed_dir, "broad_cluster_markers.csv"), row.names = FALSE)
+
+
+
 # $broad_labels with just those 4 broad annotations to the seurat object
 seurat$broad_celltype <- NA
 seurat$broad_celltype[seurat$seurat_clusters %in% c(16,8,14,24,11,4,12,3,5,0,2,1,6,19,10,22)] <- "GABA"
@@ -84,6 +103,7 @@ ggplot(broad_sums, aes(x = CellType, y = Percentage.Freq, fill=CellType)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme(axis.title.x=element_blank())
 dev.off()
+
 
 
 # ==== stacked bars of percent samples that make up each broad cell type ====

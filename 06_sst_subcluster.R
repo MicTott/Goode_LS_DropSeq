@@ -123,7 +123,6 @@ top10_markers <- ls.gaba.markers %>%
 
 pdf(here(plot_dir, "Heatmap_marker_genes.pdf"), width=10, height=10)
 DoHeatmap(obj.sst, features = top10_markers$gene, group.by = "seurat_clusters", group.colors=scCustomize::ColorBlind_Pal()) +
-  NoLegend() +
   scale_fill_gradientn(colors = c("white", "lightgrey", "red"))
 dev.off()
 
@@ -189,7 +188,6 @@ top10_markers <- ls.gaba.markers %>%
 
 pdf(here(plot_dir, "Heatmap_marker_genes_all.pdf"), width=10, height=10)
 DoHeatmap(seurat, features = top10_markers$gene, group.by = "seurat_clusters", group.colors=scCustomize::ColorBlind_Pal()) +
-  NoLegend() +
   scale_fill_gradientn(colors = c("white", "lightgrey", "red"))
 dev.off()
 
