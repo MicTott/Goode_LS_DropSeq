@@ -6,6 +6,9 @@
 # macOS Trash folder which might appear
 .Trashes
 
+# folders
+figures/
+
 # General backup files
 *.swp
 *.swo

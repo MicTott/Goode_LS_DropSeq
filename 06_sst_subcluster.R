@@ -96,8 +96,24 @@ DimPlot(obj.sst, reduction="umap", label=TRUE) +
 dev.off()
 
 
+table(obj.sst$seurat_clusters)
+# 0    1    2    3    4    5    6    7 
+# 1818  151  836 1447  372  362  336 1174 
+
+
 # ====== Marker genes =======
 ls.gaba.markers <- FindAllMarkers(obj.sst, only.pos = TRUE)
+top50_markers <- ls.gaba.markers %>%
+  group_by(cluster) %>%
+  dplyr::filter(avg_log2FC > 1) %>%
+  slice_head(n = 50) %>%
+  ungroup()
+
+# export top 50 markers per cell type
+write.csv(top50_markers, here(processed_dir, "SST_subcluster_markers.csv"), row.names = FALSE)
+
+
+
 top10_markers <- ls.gaba.markers %>%
   group_by(cluster) %>%
   dplyr::filter(avg_log2FC > 1) %>%
