@@ -64,6 +64,49 @@ write.csv(top50_markers, here(processed_dir, "broad_cluster_markers.csv"), row.n
 
 
 
+# ==== stacked bars of percent samples that make up each broad cell type ====
+sample_percents <- table(seurat$seurat_clusters, seurat$Sample_ID)
+# DLS1 DLS2 DLS3
+# 0  1446 1421 1427
+# 1  1128  993 1061
+# 2   837  710  802
+# 3   718  661  678
+
+# Convert counts to row-wise percentages
+sample_percents <- table(seurat$seurat_clusters, seurat$Sample_ID)
+sample_percents_norm <- prop.table(sample_percents, margin = 1) * 100  # Convert to percentage
+
+# Convert matrix to dataframe while keeping row and column names
+df_long <- as.data.frame(sample_percents_norm) %>%
+  tibble::rownames_to_column() 
+# rowname Var1 Var2     Freq
+# 1        1    0 DLS1 33.67490
+# 2        2    1 DLS1 35.44940
+# 3        3    2 DLS1 35.63218
+# 4        4    3 DLS1 34.90520
+# 5        5    4 DLS1 36.03071
+# 6        6    5 DLS1 34.17800
+# 7        7    6 DLS1 35.26697
+
+# rename Var1 to CellType and Var2 to Sample
+colnames(df_long) <- c("", "Cell_Type", "Sample", "Percentage")
+
+# Create stacked bar plot
+pdf(here(plot_dir, "broad_celltype_sample_percentages.pdf"), width=9, height=3)
+ggplot(df_long, aes(x = Cell_Type, y = Percentage, fill = Sample)) +
+  geom_bar(stat = "identity", position = "stack") +
+  theme_minimal() +
+  labs(title = "Percentage of Samples in Each Broad Cluster",
+       x = "Broad Cluster",
+       y = "Percentage",
+       fill = "Sample") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for readability
+dev.off()
+
+
+
+
+
 # $broad_labels with just those 4 broad annotations to the seurat object
 seurat$broad_celltype <- NA
 seurat$broad_celltype[seurat$seurat_clusters %in% c(16,8,14,24,11,4,12,3,5,0,2,1,6,19,10,22)] <- "GABA"
@@ -105,45 +148,6 @@ ggplot(broad_sums, aes(x = CellType, y = Percentage.Freq, fill=CellType)) +
 dev.off()
 
 
-
-# ==== stacked bars of percent samples that make up each broad cell type ====
-sample_percents <- table(seurat$broad_celltype, seurat$Sample_ID)
-#          DLS1 DLS2 DLS3
-# GABA.1    198  182  188
-# GABA.10  1446 1421 1427
-# GABA.11   837  710  802
-# GABA.12  1128  993 1061
-# GABA.13   535  502  480
-
-# Convert counts to row-wise percentages
-sample_percents <- table(seurat$broad_celltype, seurat$Sample_ID)
-sample_percents_norm <- prop.table(sample_percents, margin = 1) * 100  # Convert to percentage
-
-# Convert matrix to dataframe while keeping row and column names
-df_long <- as.data.frame(sample_percents_norm) %>%
-  tibble::rownames_to_column() 
-# rowname     Var1 Var2     Freq
-# 1        1   GABA.1 DLS1 34.85915
-# 2        2  GABA.10 DLS1 33.67490
-# 3        3  GABA.11 DLS1 35.63218
-# 4        4  GABA.12 DLS1 35.44940
-# 5        5  GABA.13 DLS1 35.26697
-# 6        6  GABA.14 DLS1 33.60825
-
-# rename Var1 to CellType and Var2 to Sample
-colnames(df_long) <- c("", "Cell_Type", "Sample", "Percentage")
-
-# Create stacked bar plot
-pdf(here(plot_dir, "broad_celltype_sample_percentages.pdf"), width=9, height=3)
-ggplot(df_long, aes(x = Cell_Type, y = Percentage, fill = Cell_Type)) +
-  geom_bar(stat = "identity", position = "stack") +
-  theme_minimal() +
-  labs(title = "Percentage of Samples in Each Broad Cluster",
-       x = "Broad Cluster",
-       y = "Percentage",
-       fill = "Sample") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for readability
-dev.off()
 
 
 # save final broad cell type clusters
