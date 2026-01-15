@@ -9,6 +9,10 @@ Analysis code for single-nucleus RNA sequencing (Drop-seq) of the mouse lateral 
 **A dorsal hippocampus-prodynorphinergic dorsolateral septum-to-lateral hypothalamus circuit mediates contextual gating of feeding**  
 https://www.biorxiv.org/content/10.1101/2024.08.02.606427v1
 
+## Zenodo
+
+DOI: 10.5281/zenodo.18259886
+
 ## Data Availability
 
 Raw sequencing data is available on GEO: Accession number **GSE316515**
