@@ -14,10 +14,9 @@ Raw sequencing data is available on GEO: Accession number **GSE316515**
 ## Repository Structure
 
 ```
-├── code/             # Analysis scripts (Jupyter notebooks & R)
+├── code/             # Analysis scripts (R scripts)
 ├── processed-data/   # Processed data files
-├── figures/          # Publication figures
-└── plots/            # Additional plots
+└── plots/            # Publication and Additional plots
 ```
 
 
