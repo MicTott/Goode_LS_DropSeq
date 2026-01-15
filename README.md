@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/914449882.svg)](https://doi.org/10.5281/zenodo.18259885)
+
 # Goode_LS_DropSeq
 
 Analysis code for single-nucleus RNA sequencing (Drop-seq) of the mouse lateral septum in Goode et al. (2025).
